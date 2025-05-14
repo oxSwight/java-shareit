@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 import ru.practicum.shareit.item.service.ItemService;
 import ru.practicum.shareit.item.dto.ItemDto;
+
 import java.util.List;
 
 @Slf4j
@@ -34,6 +35,7 @@ public class ItemController {
         log.info("Предмет {} успешно создан", itemDto);
         return itemDto;
     }
+
     @GetMapping
     public List<ItemDto> findAllOwned(@RequestHeader("X-Sharer-User-Id") Long userId) {
         log.info("Получен запрос на получение предметов пользователя {}", userId);
