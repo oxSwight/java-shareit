@@ -1,4 +1,4 @@
-package ru.practicum.shareit.booking.model.handler;
+package ru.practicum.shareit.handler;
 
 import jakarta.validation.ValidationException;
 import lombok.extern.slf4j.Slf4j;

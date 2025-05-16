@@ -85,7 +85,7 @@ public class ItemService {
                 .toList();
     }
 
-    public void userIsOwner(Long id, Long userId) {
+    private void userIsOwner(Long id, Long userId) {
         Optional.ofNullable(userStorage.read(userId))
                 .orElseThrow(() -> new NotFoundException(String.format(ExceptionMessages.USER_NOT_FOUND_ERROR, userId)));
         Item item = itemStorage.read(id);

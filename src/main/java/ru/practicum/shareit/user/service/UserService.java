@@ -48,7 +48,7 @@ public class UserService {
         userStorage.delete(id);
     }
 
-    private void validate(User user) throws DuplicateException {
+    private void validate(User user) {
         if (userStorage.getAll()
                 .stream()
                 .anyMatch(u -> u.getEmail()

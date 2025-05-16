@@ -9,7 +9,5 @@ import lombok.Data;
 public class User {
     private Long id;
     private String name;
-
-    @Email(message = "Email имеет некорректный формат")
     private String email;
 }
