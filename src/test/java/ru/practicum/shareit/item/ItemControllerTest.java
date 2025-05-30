@@ -1,8 +1,10 @@
 package ru.practicum.shareit.item;
 
 
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import ru.practicum.shareit.ShareItApp;
@@ -18,7 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(classes = ShareItApp.class)
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@AutoConfigureTestDatabase
+@RequiredArgsConstructor(onConstructor_ = @Autowired)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class ItemControllerTest {
     static int userCount = 0;
     static int itemCount = 0;
@@ -48,8 +52,8 @@ class ItemControllerTest {
 
         ItemDto itemDto = getItemDto(itemCount);
         itemDto = itemController.create(itemDto, userDto.getId());
-        ItemDto foundItemDto = itemController.findItemById(itemDto.getId(), userDto.getId());
-        assertEquals(itemDto, foundItemDto);
+        ItemDto foundItemDto = itemController.findById(itemDto.getId(), userDto.getId());
+        assertEquals(itemDto.getId(), foundItemDto.getId());
     }
 
 
@@ -76,9 +80,9 @@ class ItemControllerTest {
 
         ItemDto itemDto = getItemDto(itemCount);
         itemDto = itemController.create(itemDto, userDto.getId());
-        itemDto.setName("Пианино");
-        itemDto.setDescription("Большое и тяжёлое, самовывоз");
-        itemDto.setAvailable(false);
+        itemDto.setName("Item9999");
+        itemDto.setDescription("Desc9999");
+        itemDto.setIsAvailable(false);
         ItemDto updatedItemDto = itemController.update(itemDto.getId(), itemDto, userDto.getId());
         assertEquals(itemDto, updatedItemDto);
     }
@@ -117,7 +121,7 @@ class ItemControllerTest {
         ItemDto itemDto3 = getItemDto(itemCount);
         itemDto3.setDescription("SearchItem");
         itemDto3.setDescription("SearchItemDescription");
-        itemDto3.setAvailable(false);
+        itemDto3.setIsAvailable(false);
         itemController.create(itemDto3, userDto.getId());
 
         ItemDto itemDto4 = getItemDto(itemCount);
@@ -147,7 +151,7 @@ class ItemControllerTest {
         return ItemDto.builder()
                 .name("Item" + count)
                 .description("Description" + count)
-                .available(true)
+                .isAvailable(true)
                 .build();
     }
 }

@@ -9,29 +9,27 @@ import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.mapper.UserMapper;
-import ru.practicum.shareit.user.storage.UserStorage;
+import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.util.Objects;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
+    private final UserRepository userRepository;
 
-    private final UserStorage userStorage;
-
-    public UserDto read(Long id) {
-        return UserMapper.toUserDto(userStorage.read(id));
+    public UserDto getItemDto(Long id) {
+        return UserMapper.toUserDto(getUser(id));
     }
 
-    public UserDto create(UserDto userDto) {
+    public UserDto createUser(UserDto userDto) {
         User user = UserMapper.toUser(userDto);
-        validate(user);
-        return UserMapper.toUserDto(userStorage.create(user));
+        validateUser(user);
+        return UserMapper.toUserDto(userRepository.saveAndFlush(user));
     }
 
-    public UserDto update(Long id, UserDto userDto) {
-        User user = userStorage.read(id);
+    public UserDto updateUser(Long id, UserDto userDto) {
+        User user = getUser(id);
         if (userDto.getName() != null) {
             user.setName(userDto.getName());
         }
@@ -39,26 +37,30 @@ public class UserService {
             user.setEmail(userDto.getEmail());
         }
 
-        validate(user);
-        return UserMapper.toUserDto(userStorage.update(user));
+        validateUser(user);
+        return UserMapper.toUserDto(userRepository.saveAndFlush(user));
     }
 
-    public void delete(Long id) {
-        exists(id);
-        userStorage.delete(id);
+    public void deleteUser(Long id) {
+        getUser(id);
+        userRepository.deleteById(id);
     }
 
-    private void validate(User user) {
-        if (userStorage.getAll()
+    private void validateUser(User user) {
+        if (userRepository.findAllByEmail(user.getEmail())
                 .stream()
-                .anyMatch(u -> u.getEmail()
-                        .equals(user.getEmail()) && !Objects.equals(u.getId(), user.getId()))) {
+                .anyMatch(u ->
+                        !Objects.equals(u.getId(), user.getId()))) {
             throw new DuplicateException("Этот email уже используется");
         }
     }
 
-    public void exists(Long userId) throws ConditionsNotMetException {
-        Optional.ofNullable(userStorage.read(userId))
+    public User getUser(Long userId) throws ConditionsNotMetException {
+        if (userId == null) {
+            throw new ConditionsNotMetException(ExceptionMessages.NOT_FOUND_ITEM);
+        }
+
+        return userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException(String.format(ExceptionMessages.USER_NOT_FOUND_ERROR, userId)));
     }
 
