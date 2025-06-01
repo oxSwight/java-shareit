@@ -16,7 +16,7 @@ import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.exceptions.ConditionsNotMetException;
 import ru.practicum.shareit.exceptions.ExceptionMessages;
 import ru.practicum.shareit.exceptions.NotFoundException;
-import ru.practicum.shareit.exceptions.WrongUserExсeption;
+import ru.practicum.shareit.exceptions.WrongUserException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.user.model.User;
@@ -172,7 +172,7 @@ public class BookingService {
 
         Booking booking = bookingOptional.get();
         if (!booking.getItem().getOwner().getId().equals(userId)) {
-            throw new WrongUserExсeption(ExceptionMessages.BOOKING_CHANGE_STATUS);
+            throw new WrongUserException(ExceptionMessages.BOOKING_CHANGE_STATUS);
         }
 
         changeStatus(booking, approved ? BookingEvent.APPROVE : BookingEvent.REJECT);

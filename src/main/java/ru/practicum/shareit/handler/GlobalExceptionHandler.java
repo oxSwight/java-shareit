@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.practicum.shareit.exceptions.ConditionsNotMetException;
 import ru.practicum.shareit.exceptions.NotFoundException;
-import ru.practicum.shareit.exceptions.WrongUserExсeption;
+import ru.practicum.shareit.exceptions.WrongUserException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -56,7 +56,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.FORBIDDEN)
-    public ErrorResponse handleWrongUserExсeption(final WrongUserExсeption e) {
+    public ErrorResponse handleWrongUserExсeption(final WrongUserException e) {
         log.info(e.getMessage());
         return new ErrorResponse(e.getMessage());
     }
