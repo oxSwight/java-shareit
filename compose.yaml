@@ -1,38 +1,68 @@
+#services:
+#  app:
+#    image: app:0.0.1
+#    container_name: postgres-app
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    ports:
+#      - "8080:8080"
+#    depends_on:
+#      - db
+#  db:
+#    image: postgres:16.1
+#    container_name: postgres-db
+#    ports:
+#      - "5432:5432"
+#    volumes:
+#      - ./db:/var/lib/postgresql/data/
+#    environment:
+#      - POSTGRES_DB=postgres
+#      - POSTGRES_USER=postgres
+#      - POSTGRES_PASSWORD=12345
+#    healthcheck:
+#      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
+#      timeout: 5s
+#      interval: 5s
+#      retries: 10
+#
+
 services:
-  app:
-    image: app:0.0.1
-    container_name: postgres-app
-    build:
-      context: .
-      dockerfile: Dockerfile
+  gateway:
+    build: gateway
+    image: shareit-gateway
+    container_name: shareit-gateway
     ports:
       - "8080:8080"
     depends_on:
-      - db
-  db: # имя сервиса
-    # образ, из которого должен быть запущен контейнер
-    image: postgres:16.1
-    # имя, которое нужно присвоить контейнеру
-    container_name: postgres-db
-    # публикуемые порты
-    ports:
-      - "5432:5432"
-    # настройки монтирования volume
-    volumes:
-      - ./db:/var/lib/postgresql/data/
-    # переменные окружения
+      - server
     environment:
-      - POSTGRES_DB=postgres
+      - SHAREIT_SERVER_URL=http://server:9090
+
+  server:
+    build: server
+    image: shareit-server
+    container_name: shareit-server
+    ports:
+      - "9090:9090"
+    depends_on:
+      - db
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/postgres
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=12345
+
+  db:
+    image: postgres:16.1
+    container_name: postgres
+    ports:
+      - "6541:5432"
+    environment:
       - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
       - POSTGRES_PASSWORD=12345
-    # описание способа проверки, что контейнер в рабочем состоянии
     healthcheck:
-      # указываем, какую команду выполнить внутри контейнера для проверки его статуса
-      # в этом примере вызывается утилита pg_isready, входящая в состав PostgreSQL
       test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
-      # через какое время после запуска начинать проверку
       timeout: 5s
-      # интервал повторов проверки
       interval: 5s
-      # количество попыток
       retries: 10
