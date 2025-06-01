@@ -2,6 +2,7 @@ package ru.practicum.shareit.booking.service;
 
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.stereotype.Service;
@@ -15,7 +16,7 @@ import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.exceptions.ConditionsNotMetException;
 import ru.practicum.shareit.exceptions.ExceptionMessages;
 import ru.practicum.shareit.exceptions.NotFoundException;
-import ru.practicum.shareit.exceptions.WrongUserExeption;
+import ru.practicum.shareit.exceptions.WrongUserExсeption;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.user.model.User;
@@ -33,6 +34,13 @@ public class BookingService {
     private final ItemRepository itemRepository;
     private final StateMachineFactory<BookingStatusType, BookingEvent> stateMachineFactory;
 
+    // Вспомогательный метод для создания сортировки
+    private Sort createSort(BookingState state) {
+        return state == BookingState.ALL
+                ? Sort.by(Sort.Direction.ASC, "start")
+                : Sort.by(Sort.Direction.DESC, "start");
+    }
+
     public BookingDto getBookingDto(Long bookingId, Long userId) {
         Optional<Booking> bookingOptional = getBooking(bookingId);
         if (bookingOptional.isEmpty()) {
@@ -47,18 +55,46 @@ public class BookingService {
     }
 
     public List<BookingDto> readByBookerAndState(BookingState state, Long userId) {
-        List<Booking> bookings = switch (state) {
-            case ALL -> bookingRepository.findAllByBookerIdOrderByStartAsc(userId);
-            case WAITING ->
-                    bookingRepository.findAllByBookerIdAndStatusOrderByStartDesc(userId, BookingStatusType.WAITING);
-            case REJECTED ->
-                    bookingRepository.findAllByBookerIdAndStatusOrderByStartDesc(userId, BookingStatusType.REJECTED);
-            case PAST -> bookingRepository.findAllByBookerIdAndEndBeforeOrderByStartDesc(userId, LocalDateTime.now());
-            case CURRENT ->
-                    bookingRepository.findAllByBookerIdAndStartBeforeAndEndAfterOrderByStartDesc(userId, LocalDateTime.now(), LocalDateTime.now());
-            case FUTURE ->
-                    bookingRepository.findAllByBookerIdAndStartAfterOrderByStartDesc(userId, LocalDateTime.now());
-        };
+        Sort sort = createSort(state);
+        List<Booking> bookings;
+
+        switch (state) {
+            case ALL:
+                bookings = bookingRepository.findAllByBookerId(userId, sort);
+                break;
+            case WAITING:
+            case REJECTED:
+                bookings = bookingRepository.findAllByBookerIdAndStatus(
+                        userId,
+                        BookingStatusType.valueOf(state.name()),
+                        sort
+                );
+                break;
+            case PAST:
+                bookings = bookingRepository.findAllByBookerIdAndEndBefore(
+                        userId,
+                        LocalDateTime.now(),
+                        sort
+                );
+                break;
+            case CURRENT:
+                bookings = bookingRepository.findAllByBookerIdAndStartBeforeAndEndAfter(
+                        userId,
+                        LocalDateTime.now(),
+                        LocalDateTime.now(),
+                        sort
+                );
+                break;
+            case FUTURE:
+                bookings = bookingRepository.findAllByBookerIdAndStartAfter(
+                        userId,
+                        LocalDateTime.now(),
+                        sort
+                );
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown state: " + state);
+        }
 
         return bookings.stream()
                 .map(BookingMapper::toBookingDto)
@@ -68,19 +104,47 @@ public class BookingService {
     public List<BookingDto> readByOwnerAndState(BookingState state, Long userId) {
         userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException(String.format(ExceptionMessages.USER_NOT_FOUND_ERROR, userId)));
-        List<Booking> bookings = switch (state) {
-            case ALL -> bookingRepository.findAllByItemOwnerIdOrderByStartAsc(userId);
-            case WAITING ->
-                    bookingRepository.findAllByItemOwnerIdAndStatusOrderByStartDesc(userId, BookingStatusType.WAITING);
-            case REJECTED ->
-                    bookingRepository.findAllByItemOwnerIdAndStatusOrderByStartDesc(userId, BookingStatusType.REJECTED);
-            case PAST ->
-                    bookingRepository.findAllByItemOwnerIdAndEndBeforeOrderByStartDesc(userId, LocalDateTime.now());
-            case CURRENT ->
-                    bookingRepository.findAllByItemOwnerIdAndStartBeforeAndEndAfterOrderByStartDesc(userId, LocalDateTime.now(), LocalDateTime.now());
-            case FUTURE ->
-                    bookingRepository.findAllByItemOwnerIdAndStartAfterOrderByStartDesc(userId, LocalDateTime.now());
-        };
+
+        Sort sort = createSort(state);
+        List<Booking> bookings;
+
+        switch (state) {
+            case ALL:
+                bookings = bookingRepository.findAllByItemOwnerId(userId, sort);
+                break;
+            case WAITING:
+            case REJECTED:
+                bookings = bookingRepository.findAllByItemOwnerIdAndStatus(
+                        userId,
+                        BookingStatusType.valueOf(state.name()),
+                        sort
+                );
+                break;
+            case PAST:
+                bookings = bookingRepository.findAllByItemOwnerIdAndEndBefore(
+                        userId,
+                        LocalDateTime.now(),
+                        sort
+                );
+                break;
+            case CURRENT:
+                bookings = bookingRepository.findAllByItemOwnerIdAndStartBeforeAndEndAfter(
+                        userId,
+                        LocalDateTime.now(),
+                        LocalDateTime.now(),
+                        sort
+                );
+                break;
+            case FUTURE:
+                bookings = bookingRepository.findAllByItemOwnerIdAndStartAfter(
+                        userId,
+                        LocalDateTime.now(),
+                        sort
+                );
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown state: " + state);
+        }
 
         return bookings.stream()
                 .map(BookingMapper::toBookingDto)
@@ -108,7 +172,7 @@ public class BookingService {
 
         Booking booking = bookingOptional.get();
         if (!booking.getItem().getOwner().getId().equals(userId)) {
-            throw new WrongUserExeption(ExceptionMessages.BOOKING_CHANGE_STATUS);
+            throw new WrongUserExсeption(ExceptionMessages.BOOKING_CHANGE_STATUS);
         }
 
         changeStatus(booking, approved ? BookingEvent.APPROVE : BookingEvent.REJECT);
@@ -116,7 +180,6 @@ public class BookingService {
         return BookingMapper.toBookingDto(bookingRepository.saveAndFlush(booking));
     }
 
-    // Отмена брони пользователем
     public BookingDto cancelBooking(Long bookingId, Long userId) {
         Optional<Booking> bookingOptional = getBooking(bookingId);
         if (bookingOptional.isEmpty()) {
@@ -134,7 +197,11 @@ public class BookingService {
     }
 
     private void validateBooking(Booking booking) {
-        Optional<Booking> bookingOptional = bookingRepository.findByItemIdAndEndIsAfterAndStartIsBefore(booking.getItem().getId(), booking.getEnd(), booking.getStart());
+        Optional<Booking> bookingOptional = bookingRepository.findByItemIdAndEndIsAfterAndStartIsBefore(
+                booking.getItem().getId(),
+                booking.getEnd(),
+                booking.getStart()
+        );
 
         if (bookingOptional.isPresent()) {
             throw new ConditionsNotMetException(ExceptionMessages.BOOKING_ITEM_IS_BOOKED);
@@ -156,8 +223,10 @@ public class BookingService {
     }
 
     private Optional<Booking> getBooking(Long bookingId) {
-        return Optional.of(bookingRepository.findById(bookingId))
-                .orElseThrow(() -> new NotFoundException(String.format(ExceptionMessages.BOOKING_NOT_FOUND_ERROR, bookingId)));
+        return bookingRepository.findById(bookingId)
+                .or(() -> {
+                    throw new NotFoundException(String.format(ExceptionMessages.BOOKING_NOT_FOUND_ERROR, bookingId));
+                });
     }
 
     private void changeStatus(Booking booking, BookingEvent bookingEvent) {

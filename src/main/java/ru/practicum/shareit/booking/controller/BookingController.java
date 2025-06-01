@@ -25,11 +25,11 @@ public class BookingController {
     private final BookingService bookingService;
 
     @PostMapping
-    public BookingDto create(@Valid @RequestBody
-                             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) BookingDto bookingDto,
+    public BookingDto create(@Valid @RequestBody BookingDto bookingDto,
                              @RequestHeader("X-Sharer-User-Id") Long userId) {
         return bookingService.createBooking(bookingDto, userId);
     }
+
 
     @PatchMapping("/{bookingId}")
     public BookingDto updateStatus(@PathVariable Long bookingId,

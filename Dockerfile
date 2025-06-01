@@ -1,5 +1,5 @@
 # первый (вспомогательный) этап с именем builder
-FROM amazoncorretto:22-alpine as builder
+FROM amazoncorretto:21-alpine as builder
 # устанавливаем application в качестве рабочей директории
 WORKDIR application
 # копируем артефакт в папку application в контейнере

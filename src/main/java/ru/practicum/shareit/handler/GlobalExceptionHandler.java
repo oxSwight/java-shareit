@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.practicum.shareit.exceptions.ConditionsNotMetException;
 import ru.practicum.shareit.exceptions.NotFoundException;
-import ru.practicum.shareit.exceptions.WrongUserExeption;
+import ru.practicum.shareit.exceptions.WrongUserExсeption;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,7 +43,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleValidation(ValidationException e) {
-        log.info("Ошибка валидации: {}", e.getMessage());
+        log.warn("Ошибка валидации: {}", e.getMessage());
         return new ErrorResponse(e.getMessage());
     }
 
@@ -56,7 +56,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.FORBIDDEN)
-    public ErrorResponse handleWrongUserExeption(final WrongUserExeption e) {
+    public ErrorResponse handleWrongUserExсeption(final WrongUserExсeption e) {
         log.info(e.getMessage());
         return new ErrorResponse(e.getMessage());
     }
