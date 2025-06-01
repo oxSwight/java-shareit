@@ -2,7 +2,6 @@ package ru.practicum.shareit.item.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,62 +13,59 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
+import ru.practicum.shareit.comment.model.CommentDto;
+import ru.practicum.shareit.comment.service.CommentService;
 import ru.practicum.shareit.item.service.ItemService;
 import ru.practicum.shareit.item.dto.ItemDto;
 
 import java.util.List;
 
-@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/items")
 public class ItemController {
     private final ItemService itemService;
-
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public ItemDto create(@RequestBody @Valid ItemDto item,
-                          @RequestHeader("X-Sharer-User-Id") Long userId) {
-        log.info("Получен запрос на создание предмета {} пользователем {}", item, userId);
-        ItemDto itemDto = itemService.create(item, userId);
-        log.info("Предмет {} успешно создан", itemDto);
-        return itemDto;
-    }
+    private final CommentService commentService;
 
     @GetMapping
     public List<ItemDto> findAllOwned(@RequestHeader("X-Sharer-User-Id") Long userId) {
-        log.info("Получен запрос на получение предметов пользователя {}", userId);
-        List<ItemDto> itemDtos = itemService.getUserItems(userId);
-        log.info("Предметы {} успешно получены", itemDtos);
-        return itemDtos;
+        return itemService.getUserItems(userId);
     }
 
     @GetMapping("/{id}")
-    public ItemDto findItemById(@PathVariable Long id,
-                                @RequestHeader("X-Sharer-User-Id") Long userId) {
-        log.info("Получен запрос на получение предмета {} пользователем {}", id, userId);
-        ItemDto itemDto = itemService.read(id);
-        log.info("Предмет {} успешно получен", itemDto);
-        return itemDto;
+    public ItemDto findById(@PathVariable Long id,
+                            @RequestHeader("X-Sharer-User-Id") Long userId) {
+        return itemService.getItemDto(id);
     }
 
     @GetMapping("/search")
     public List<ItemDto> search(@RequestParam String text,
                                 @RequestHeader("X-Sharer-User-Id") Long userId) {
-        log.info("Получен запрос поиска предметов {} пользователем {}", text, userId);
-        List<ItemDto> itemDtos = itemService.search(text);
-        log.info("Предметы {} успешно найдены", itemDtos);
-        return itemDtos;
+        return itemService.searchItems(text);
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public ItemDto create(@RequestBody @Valid ItemDto item,
+                          @RequestHeader("X-Sharer-User-Id") Long userId) {
+        return itemService.createItem(item, userId);
     }
 
     @PatchMapping("/{id}")
     public ItemDto update(@PathVariable Long id,
                           @RequestBody ItemDto item,
                           @RequestHeader("X-Sharer-User-Id") Long userId) {
-        log.info("Получен запрос на обновление предмета {} пользователем {}", item, userId);
-        ItemDto itemDto = itemService.update(id, item, userId);
-        log.info("Предмет {} успешно обновлен", itemDto);
-        return itemDto;
+        return itemService.updateItem(id, item, userId);
+    }
+
+    @PostMapping("/{itemId}/comment")
+    public CommentDto createComment(@PathVariable Long itemId, @RequestBody @Valid CommentDto commentDto,
+                                    @RequestHeader("X-Sharer-User-Id") Long userId) {
+        return itemService.createItemComment(itemId, commentDto, userId);
+    }
+
+    @GetMapping("/{itemId}/comment")
+    public List<CommentDto> getItemComments(@PathVariable Long itemId) {
+        return commentService.getItemComments(itemId);
     }
 }
-

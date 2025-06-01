@@ -1,0 +1,38 @@
+services:
+  app:
+    image: app:0.0.1
+    container_name: postgres-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+  db: # имя сервиса
+    # образ, из которого должен быть запущен контейнер
+    image: postgres:16.1
+    # имя, которое нужно присвоить контейнеру
+    container_name: postgres-db
+    # публикуемые порты
+    ports:
+      - "5432:5432"
+    # настройки монтирования volume
+    volumes:
+      - ./db:/var/lib/postgresql/data/
+    # переменные окружения
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=12345
+    # описание способа проверки, что контейнер в рабочем состоянии
+    healthcheck:
+      # указываем, какую команду выполнить внутри контейнера для проверки его статуса
+      # в этом примере вызывается утилита pg_isready, входящая в состав PostgreSQL
+      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
+      # через какое время после запуска начинать проверку
+      timeout: 5s
+      # интервал повторов проверки
+      interval: 5s
+      # количество попыток
+      retries: 10
