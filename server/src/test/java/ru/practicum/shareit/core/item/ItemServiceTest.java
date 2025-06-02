@@ -53,6 +53,8 @@ class ItemServiceTest {
     void findAllOwnedShouldReturnItemsWithBookingsAndComments() {
         Long ownerId = 1L;
         User owner = createUser(ownerId);
+        when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
+
         Item item1 = createItem(1L, owner);
         Item item2 = createItem(2L, owner);
 
@@ -65,7 +67,10 @@ class ItemServiceTest {
         List<ItemDto> result = itemService.findAllOwned(ownerId);
 
         assertEquals(2, result.size());
+        verify(userRepository).findById(ownerId);
         verify(itemRepository).findAllByOwnerId(ownerId);
+        verify(bookingRepository).findAllByItemOwnerIdOrderByStartAsc(ownerId);
+        verify(commentRepository).findAllByItemIdIn(anyList());
     }
 
     @Test
@@ -164,6 +169,8 @@ class ItemServiceTest {
         Long itemId = 1L;
         Long ownerId = 1L;
         User owner = createUser(ownerId);
+        when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
+
         Item item = createItem(itemId, owner);
         ItemDto updateDto = ItemDto.builder()
                 .name("NewName")
@@ -179,6 +186,10 @@ class ItemServiceTest {
         assertEquals("NewName", result.getName());
         assertEquals("NewDesc", result.getDescription());
         assertFalse(result.getAvailable());
+
+        verify(userRepository).findById(ownerId);
+        verify(itemRepository).findById(itemId);
+        verify(itemRepository).saveAndFlush(any());
     }
 
     @Test
@@ -186,6 +197,8 @@ class ItemServiceTest {
         Long itemId = 1L;
         Long ownerId = 1L;
         User owner = createUser(ownerId);
+        when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
+
         Item item = createItem(itemId, owner);
         ItemDto updateDto = ItemDto.builder()
                 .name("NewName")
@@ -199,19 +212,30 @@ class ItemServiceTest {
         assertEquals("NewName", result.getName());
         assertEquals("Description 1", result.getDescription());
         assertTrue(result.getAvailable());
+
+        verify(userRepository).findById(ownerId);
+        verify(itemRepository).findById(itemId);
+        verify(itemRepository).saveAndFlush(any());
     }
 
     @Test
     void updateWithUnknownItemShouldThrowException() {
         Long itemId = 999L;
+        Long ownerId = 1L;
         ItemDto updateDto = ItemDto.builder().build();
+
+        when(userRepository.findById(ownerId)).thenReturn(Optional.of(createUser(ownerId)));
         when(itemRepository.findById(itemId)).thenReturn(Optional.empty());
 
         NotFoundException exception = assertThrows(
                 NotFoundException.class,
-                () -> itemService.update(itemId, updateDto, 1L)
+                () -> itemService.update(itemId, updateDto, ownerId)
         );
+
         assertEquals("Предмет не найден", exception.getMessage());
+
+        verify(userRepository).findById(ownerId);
+        verify(itemRepository).findById(itemId);
     }
 
     @Test
@@ -219,17 +243,24 @@ class ItemServiceTest {
         Long itemId = 1L;
         Long ownerId = 1L;
         Long otherUserId = 2L;
-        User owner = createUser(ownerId);
-        Item item = createItem(itemId, owner);
-        ItemDto updateDto = ItemDto.builder().build();
 
-        when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
+        User owner = createUser(ownerId);
+        User otherUser = createUser(otherUserId);
+
+        when(userRepository.findById(otherUserId)).thenReturn(Optional.of(otherUser));
+        when(itemRepository.findById(itemId)).thenReturn(Optional.of(createItem(itemId, owner)));
+
+        ItemDto updateDto = ItemDto.builder().build();
 
         ConditionsNotMetException exception = assertThrows(
                 ConditionsNotMetException.class,
                 () -> itemService.update(itemId, updateDto, otherUserId)
         );
+
         assertEquals("Пользователь не владелец предмета", exception.getMessage());
+
+        verify(userRepository).findById(otherUserId);
+        verify(itemRepository).findById(itemId);
     }
 
     @Test
@@ -289,31 +320,45 @@ class ItemServiceTest {
     @Test
     void createCommentWithUnknownItemShouldThrowException() {
         Long itemId = 999L;
+        Long userId = 1L;
         CommentDto commentDto = CommentDto.builder().build();
+
+        User user = createUser(userId); // Метод из вашего тестового набора
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(itemRepository.findById(itemId)).thenReturn(Optional.empty());
 
         NotFoundException exception = assertThrows(
                 NotFoundException.class,
-                () -> itemService.createComment(itemId, commentDto, 1L)
+                () -> itemService.createComment(itemId, commentDto, userId)
         );
+
         assertEquals("Предмет не найден", exception.getMessage());
+
+        verify(userRepository).findById(userId);
+        verify(itemRepository).findById(itemId);
+        verifyNoInteractions(commentRepository);
     }
+
 
     @Test
     void createCommentWithUnknownUserShouldThrowException() {
         Long userId = 999L;
-        Item item = createItem(1L, createUser(2L));
-        CommentDto commentDto = CommentDto.builder().build();
+        Long itemId = 1L;
+        CommentDto commentDto = CommentDto.builder().text("text").build();
 
-        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         NotFoundException exception = assertThrows(
                 NotFoundException.class,
-                () -> itemService.createComment(1L, commentDto, userId)
+                () -> itemService.createComment(itemId, commentDto, userId)
         );
+
         assertEquals("Пользователь не найден", exception.getMessage());
+
+        verify(userRepository).findById(userId);
+        verifyNoInteractions(itemRepository, commentRepository);
     }
+
 
     @Test
     void createCommentWithNotBookedItemShouldThrowException() {

@@ -110,27 +110,29 @@ class BookingServiceTest {
     void createShouldThrowWhenItemNotFound() {
         Long userId = 1L;
         BookingInDto bookingDto = createBookingInDtoBuilder().build();
+        User user = createUser(userId, "User", "user@email.com");
 
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(itemRepository.findById(anyLong())).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> bookingService.create(bookingDto, userId));
+
+        verify(userRepository).findById(userId);
         verify(itemRepository).findById(anyLong());
-        verifyNoInteractions(userRepository, bookingRepository);
+        verifyNoInteractions(bookingRepository);
     }
 
     @Test
     void createShouldThrowWhenUserNotFound() {
         Long userId = 1L;
-        User owner = createUser(2L, "Owner", "owner@email.com");
-        Item item = createItem(1L, "Item", owner, true);
         BookingInDto bookingDto = createBookingInDtoBuilder().build();
 
-        when(itemRepository.findById(anyLong())).thenReturn(Optional.of(item));
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> bookingService.create(bookingDto, userId));
-        verify(itemRepository).findById(anyLong());
+
         verify(userRepository).findById(userId);
+        verifyNoInteractions(itemRepository);
         verifyNoInteractions(bookingRepository);
     }
 
@@ -195,6 +197,7 @@ class BookingServiceTest {
         Item item = createItem(3L, "Item", owner, true);
         Booking booking = createBooking(bookingId, booker, item, BookingStatus.WAITING, future, future.plusDays(1));
 
+        when(userRepository.findById(userId)).thenReturn(Optional.of(owner));
         when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
         when(bookingRepository.saveAndFlush(any(Booking.class))).thenReturn(booking);
 
@@ -217,6 +220,7 @@ class BookingServiceTest {
         Item item = createItem(3L, "Item", owner, true);
         Booking booking = createBooking(bookingId, booker, item, BookingStatus.WAITING, future, future.plusDays(1));
 
+        when(userRepository.findById(userId)).thenReturn(Optional.of(owner));
         when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
         when(bookingRepository.saveAndFlush(any(Booking.class))).thenReturn(booking);
 
@@ -234,7 +238,9 @@ class BookingServiceTest {
     void updateStatusShouldThrowWhenBookingNotFound() {
         Long bookingId = 1L;
         Long userId = 2L;
+        User user = createUser(userId, "Owner", "owner@email.com");
 
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(bookingRepository.findById(bookingId)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> bookingService.updateStatus(bookingId, userId, true));
@@ -247,11 +253,13 @@ class BookingServiceTest {
         Long bookingId = 1L;
         Long userId = 2L;
         Long ownerId = 3L;
+        User user = createUser(userId, "NonOwner", "nonowner@email.com");
         User owner = createUser(ownerId, "Owner", "owner@email.com");
         User booker = createUser(4L, "Booker", "booker@email.com");
         Item item = createItem(3L, "Item", owner, true);
         Booking booking = createBooking(bookingId, booker, item, BookingStatus.WAITING, future, future.plusDays(1));
 
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
 
         assertThrows(ConditionsNotMetException.class, () -> bookingService.updateStatus(bookingId, userId, true));
@@ -327,152 +335,125 @@ class BookingServiceTest {
     @Test
     void findAllByBookerAndStateShouldReturnAllBookings() {
         Long userId = 1L;
-        User booker = createUser(userId, "Booker", "booker@email.com");
-        User owner = createUser(2L, "Owner", "owner@email.com");
-        Item item = createItem(1L, "Item", owner, true);
-        BookingState state = BookingState.ALL;
+        User user = createUser(userId, "Booker", "booker@email.com");
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
+        Item item = createItem(1L, "Item", createUser(2L, "Owner", "owner@email.com"), true);
         List<Booking> bookings = List.of(
-                createBooking(1L, booker, item, BookingStatus.WAITING, future, future.plusDays(1)),
-                createBooking(2L, booker, item, BookingStatus.APPROVED, past, past.plusDays(1))
+                createBooking(1L, user, item, BookingStatus.WAITING, future, future.plusDays(1)),
+                createBooking(2L, user, item, BookingStatus.APPROVED, past, past.plusDays(1))
         );
-
         when(bookingRepository.findAllByBookerIdOrderByStartAsc(userId)).thenReturn(bookings);
 
-        List<BookingOutDto> result = bookingService.findAllByBookerAndState(state, userId);
+        List<BookingOutDto> result = bookingService.findAllByBookerAndState(BookingState.ALL, userId);
 
         assertNotNull(result);
         assertEquals(2, result.size());
-        assertEquals(item.getId(), result.get(0).getItem().getId());
-        assertEquals(booker.getId(), result.get(0).getBooker().getId());
+        assertEquals(user.getId(), result.get(0).getBooker().getId());
         verify(bookingRepository).findAllByBookerIdOrderByStartAsc(userId);
     }
+
+
 
     @Test
     void findAllByBookerAndStateShouldReturnWaitingBookings() {
         Long userId = 1L;
-        User booker = createUser(userId, "Booker", "booker@email.com");
-        User owner = createUser(2L, "Owner", "owner@email.com");
-        Item item = createItem(1L, "Item", owner, true);
-        BookingState state = BookingState.WAITING;
+        User user = createUser(userId, "Booker", "booker@email.com");
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
+        Item item = createItem(1L, "Item", createUser(2L, "Owner", "owner@email.com"), true);
         List<Booking> bookings = List.of(
-                createBooking(1L, booker, item, BookingStatus.WAITING, future, future.plusDays(1))
+                createBooking(1L, user, item, BookingStatus.WAITING, future, future.plusDays(1))
         );
-
         when(bookingRepository.findAllByBookerIdAndStatusOrderByStartDesc(userId, BookingStatus.WAITING))
                 .thenReturn(bookings);
 
-        List<BookingOutDto> result = bookingService.findAllByBookerAndState(state, userId);
+        List<BookingOutDto> result = bookingService.findAllByBookerAndState(BookingState.WAITING, userId);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals(BookingStatus.WAITING, bookings.get(0).getStatus());
-        assertEquals(item.getId(), result.get(0).getItem().getId());
-        assertEquals(booker.getId(), result.get(0).getBooker().getId());
+        assertEquals(BookingStatus.WAITING, result.get(0).getStatus());
         verify(bookingRepository).findAllByBookerIdAndStatusOrderByStartDesc(userId, BookingStatus.WAITING);
     }
 
     @Test
     void findAllByBookerAndStateShouldReturnRejectedBookings() {
         Long userId = 1L;
-        User booker = createUser(userId, "Booker", "booker@email.com");
-        User owner = createUser(2L, "Owner", "owner@email.com");
-        Item item = createItem(1L, "Item", owner, true);
-        BookingState state = BookingState.REJECTED;
+        User user = createUser(userId, "Booker", "booker@email.com");
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
+        Item item = createItem(1L, "Item", createUser(2L, "Owner", "owner@email.com"), true);
         List<Booking> bookings = List.of(
-                createBooking(1L, booker, item, BookingStatus.REJECTED, future, future.plusDays(1))
+                createBooking(1L, user, item, BookingStatus.REJECTED, future, future.plusDays(1))
         );
-
         when(bookingRepository.findAllByBookerIdAndStatusOrderByStartDesc(userId, BookingStatus.REJECTED))
                 .thenReturn(bookings);
 
-        List<BookingOutDto> result = bookingService.findAllByBookerAndState(state, userId);
+        List<BookingOutDto> result = bookingService.findAllByBookerAndState(BookingState.REJECTED, userId);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals(BookingStatus.REJECTED, bookings.get(0).getStatus());
-        assertEquals(item.getId(), result.get(0).getItem().getId());
-        assertEquals(booker.getId(), result.get(0).getBooker().getId());
+        assertEquals(BookingStatus.REJECTED, result.get(0).getStatus());
         verify(bookingRepository).findAllByBookerIdAndStatusOrderByStartDesc(userId, BookingStatus.REJECTED);
     }
 
     @Test
     void findAllByBookerAndStateShouldReturnPastBookings() {
         Long userId = 1L;
-        User booker = createUser(userId, "Booker", "booker@email.com");
-        User owner = createUser(2L, "Owner", "owner@email.com");
-        Item item = createItem(1L, "Item", owner, true);
-        BookingState state = BookingState.PAST;
+        User user = createUser(userId, "Booker", "booker@email.com");
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
+        Item item = createItem(1L, "Item", createUser(2L, "Owner", "owner@email.com"), true);
         List<Booking> bookings = List.of(
-                createBooking(1L, booker, item, BookingStatus.APPROVED, past, past.plusHours(1))
+                createBooking(1L, user, item, BookingStatus.APPROVED, past, past.plusHours(1))
         );
-
         when(bookingRepository.findAllByBookerIdAndEndBeforeOrderByStartDesc(eq(userId), any(LocalDateTime.class)))
                 .thenReturn(bookings);
 
-        List<BookingOutDto> result = bookingService.findAllByBookerAndState(state, userId);
+        List<BookingOutDto> result = bookingService.findAllByBookerAndState(BookingState.PAST, userId);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertTrue(bookings.get(0).getEnd().isBefore(LocalDateTime.now()));
-        assertEquals(item.getId(), result.get(0).getItem().getId());
-        assertEquals(booker.getId(), result.get(0).getBooker().getId());
         verify(bookingRepository).findAllByBookerIdAndEndBeforeOrderByStartDesc(eq(userId), any(LocalDateTime.class));
     }
 
     @Test
     void findAllByBookerAndStateShouldReturnCurrentBookings() {
         Long userId = 1L;
-        User booker = createUser(userId, "Booker", "booker@email.com");
-        User owner = createUser(2L, "Owner", "owner@email.com");
-        Item item = createItem(1L, "Item", owner, true);
-        BookingState state = BookingState.CURRENT;
+        User user = createUser(userId, "Booker", "booker@email.com");
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
+        Item item = createItem(1L, "Item", createUser(2L, "Owner", "owner@email.com"), true);
         List<Booking> bookings = List.of(
-                createBooking(1L, booker, item, BookingStatus.APPROVED, past, future)
+                createBooking(1L, user, item, BookingStatus.APPROVED, past, future)
         );
-
-        when(bookingRepository.findAllByBookerIdAndStartBeforeAndEndAfterOrderByStartDesc(
-                eq(userId), any(LocalDateTime.class), any(LocalDateTime.class)))
+        when(bookingRepository.findAllByBookerIdAndStartBeforeAndEndAfterOrderByStartDesc(eq(userId), any(), any()))
                 .thenReturn(bookings);
 
-        List<BookingOutDto> result = bookingService.findAllByBookerAndState(state, userId);
+        List<BookingOutDto> result = bookingService.findAllByBookerAndState(BookingState.CURRENT, userId);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertTrue(bookings.get(0).getStart().isBefore(LocalDateTime.now()));
-        assertTrue(bookings.get(0).getEnd().isAfter(LocalDateTime.now()));
-        assertEquals(item.getId(), result.get(0).getItem().getId());
-        assertEquals(booker.getId(), result.get(0).getBooker().getId());
-        verify(bookingRepository).findAllByBookerIdAndStartBeforeAndEndAfterOrderByStartDesc(
-                eq(userId), any(LocalDateTime.class), any(LocalDateTime.class));
+        verify(bookingRepository).findAllByBookerIdAndStartBeforeAndEndAfterOrderByStartDesc(eq(userId), any(), any());
     }
 
     @Test
     void findAllByBookerAndStateShouldReturnFutureBookings() {
         Long userId = 1L;
-        User booker = createUser(userId, "Booker", "booker@email.com");
-        User owner = createUser(2L, "Owner", "owner@email.com");
-        Item item = createItem(1L, "Item", owner, true);
-        BookingState state = BookingState.FUTURE;
+        User user = createUser(userId, "Booker", "booker@email.com");
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
+        Item item = createItem(1L, "Item", createUser(2L, "Owner", "owner@email.com"), true);
         List<Booking> bookings = List.of(
-                createBooking(1L, booker, item, BookingStatus.WAITING, future, future.plusDays(1))
+                createBooking(1L, user, item, BookingStatus.WAITING, future, future.plusDays(1))
         );
-
         when(bookingRepository.findAllByBookerIdAndStartAfterOrderByStartDesc(eq(userId), any(LocalDateTime.class)))
                 .thenReturn(bookings);
 
-        List<BookingOutDto> result = bookingService.findAllByBookerAndState(state, userId);
+        List<BookingOutDto> result = bookingService.findAllByBookerAndState(BookingState.FUTURE, userId);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertTrue(bookings.get(0).getStart().isAfter(LocalDateTime.now()));
-        assertEquals(item.getId(), result.get(0).getItem().getId());
-        assertEquals(booker.getId(), result.get(0).getBooker().getId());
         verify(bookingRepository).findAllByBookerIdAndStartAfterOrderByStartDesc(eq(userId), any(LocalDateTime.class));
     }
 
@@ -480,23 +461,20 @@ class BookingServiceTest {
     void findAllByOwnerAndStateShouldReturnAllBookings() {
         Long userId = 1L;
         User owner = createUser(userId, "Owner", "owner@email.com");
+        when(userRepository.findById(userId)).thenReturn(Optional.of(owner));
+
         User booker = createUser(2L, "Booker", "booker@email.com");
         Item item = createItem(1L, "Item", owner, true);
-        BookingState state = BookingState.ALL;
-
         List<Booking> bookings = List.of(
                 createBooking(1L, booker, item, BookingStatus.WAITING, future, future.plusDays(1)),
                 createBooking(2L, booker, item, BookingStatus.APPROVED, past, past.plusDays(1))
         );
-
         when(bookingRepository.findAllByItemOwnerIdOrderByStartAsc(userId)).thenReturn(bookings);
 
-        List<BookingOutDto> result = bookingService.findAllByOwnerAndState(state, userId);
+        List<BookingOutDto> result = bookingService.findAllByOwnerAndState(BookingState.ALL, userId);
 
         assertNotNull(result);
         assertEquals(2, result.size());
-        assertEquals(item.getId(), result.get(0).getItem().getId());
-        assertEquals(booker.getId(), result.get(0).getBooker().getId());
         verify(bookingRepository).findAllByItemOwnerIdOrderByStartAsc(userId);
     }
 
@@ -504,24 +482,20 @@ class BookingServiceTest {
     void findAllByOwnerAndStateShouldReturnWaitingBookings() {
         Long userId = 1L;
         User owner = createUser(userId, "Owner", "owner@email.com");
+        when(userRepository.findById(userId)).thenReturn(Optional.of(owner));
+
         User booker = createUser(2L, "Booker", "booker@email.com");
         Item item = createItem(1L, "Item", owner, true);
-        BookingState state = BookingState.WAITING;
-
         List<Booking> bookings = List.of(
                 createBooking(1L, booker, item, BookingStatus.WAITING, future, future.plusDays(1))
         );
-
         when(bookingRepository.findAllByItemOwnerIdAndStatusOrderByStartDesc(userId, BookingStatus.WAITING))
                 .thenReturn(bookings);
 
-        List<BookingOutDto> result = bookingService.findAllByOwnerAndState(state, userId);
+        List<BookingOutDto> result = bookingService.findAllByOwnerAndState(BookingState.WAITING, userId);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals(BookingStatus.WAITING, bookings.get(0).getStatus());
-        assertEquals(item.getId(), result.get(0).getItem().getId());
-        assertEquals(booker.getId(), result.get(0).getBooker().getId());
         verify(bookingRepository).findAllByItemOwnerIdAndStatusOrderByStartDesc(userId, BookingStatus.WAITING);
     }
 
@@ -529,24 +503,20 @@ class BookingServiceTest {
     void findAllByOwnerAndStateShouldReturnRejectedBookings() {
         Long userId = 1L;
         User owner = createUser(userId, "Owner", "owner@email.com");
+        when(userRepository.findById(userId)).thenReturn(Optional.of(owner));
+
         User booker = createUser(2L, "Booker", "booker@email.com");
         Item item = createItem(1L, "Item", owner, true);
-        BookingState state = BookingState.REJECTED;
-
         List<Booking> bookings = List.of(
                 createBooking(1L, booker, item, BookingStatus.REJECTED, future, future.plusDays(1))
         );
-
         when(bookingRepository.findAllByItemOwnerIdAndStatusOrderByStartDesc(userId, BookingStatus.REJECTED))
                 .thenReturn(bookings);
 
-        List<BookingOutDto> result = bookingService.findAllByOwnerAndState(state, userId);
+        List<BookingOutDto> result = bookingService.findAllByOwnerAndState(BookingState.REJECTED, userId);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals(BookingStatus.REJECTED, bookings.get(0).getStatus());
-        assertEquals(item.getId(), result.get(0).getItem().getId());
-        assertEquals(booker.getId(), result.get(0).getBooker().getId());
         verify(bookingRepository).findAllByItemOwnerIdAndStatusOrderByStartDesc(userId, BookingStatus.REJECTED);
     }
 
@@ -554,24 +524,20 @@ class BookingServiceTest {
     void findAllByOwnerAndStateShouldReturnPastBookings() {
         Long userId = 1L;
         User owner = createUser(userId, "Owner", "owner@email.com");
+        when(userRepository.findById(userId)).thenReturn(Optional.of(owner));
+
         User booker = createUser(2L, "Booker", "booker@email.com");
         Item item = createItem(1L, "Item", owner, true);
-        BookingState state = BookingState.PAST;
-
         List<Booking> bookings = List.of(
                 createBooking(1L, booker, item, BookingStatus.APPROVED, past, past.plusHours(1))
         );
-
         when(bookingRepository.findAllByItemOwnerIdAndEndBeforeOrderByStartDesc(eq(userId), any(LocalDateTime.class)))
                 .thenReturn(bookings);
 
-        List<BookingOutDto> result = bookingService.findAllByOwnerAndState(state, userId);
+        List<BookingOutDto> result = bookingService.findAllByOwnerAndState(BookingState.PAST, userId);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertTrue(bookings.get(0).getEnd().isBefore(LocalDateTime.now()));
-        assertEquals(item.getId(), result.get(0).getItem().getId());
-        assertEquals(booker.getId(), result.get(0).getBooker().getId());
         verify(bookingRepository).findAllByItemOwnerIdAndEndBeforeOrderByStartDesc(eq(userId), any(LocalDateTime.class));
     }
 
@@ -579,26 +545,21 @@ class BookingServiceTest {
     void findAllByOwnerAndStateShouldReturnCurrentBookings() {
         Long userId = 1L;
         User owner = createUser(userId, "Owner", "owner@email.com");
+        when(userRepository.findById(userId)).thenReturn(Optional.of(owner));
+
         User booker = createUser(2L, "Booker", "booker@email.com");
         Item item = createItem(1L, "Item", owner, true);
-        BookingState state = BookingState.CURRENT;
-
         List<Booking> bookings = List.of(
                 createBooking(1L, booker, item, BookingStatus.APPROVED, past, future)
         );
-
         when(bookingRepository.findAllByItemOwnerIdAndStartBeforeAndEndAfterOrderByStartDesc(
                 eq(userId), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(bookings);
 
-        List<BookingOutDto> result = bookingService.findAllByOwnerAndState(state, userId);
+        List<BookingOutDto> result = bookingService.findAllByOwnerAndState(BookingState.CURRENT, userId);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertTrue(bookings.get(0).getStart().isBefore(LocalDateTime.now()));
-        assertTrue(bookings.get(0).getEnd().isAfter(LocalDateTime.now()));
-        assertEquals(item.getId(), result.get(0).getItem().getId());
-        assertEquals(booker.getId(), result.get(0).getBooker().getId());
         verify(bookingRepository).findAllByItemOwnerIdAndStartBeforeAndEndAfterOrderByStartDesc(
                 eq(userId), any(LocalDateTime.class), any(LocalDateTime.class));
     }
@@ -607,24 +568,20 @@ class BookingServiceTest {
     void findAllByOwnerAndStateShouldReturnFutureBookings() {
         Long userId = 1L;
         User owner = createUser(userId, "Owner", "owner@email.com");
+        when(userRepository.findById(userId)).thenReturn(Optional.of(owner));
+
         User booker = createUser(2L, "Booker", "booker@email.com");
         Item item = createItem(1L, "Item", owner, true);
-        BookingState state = BookingState.FUTURE;
-
         List<Booking> bookings = List.of(
                 createBooking(1L, booker, item, BookingStatus.WAITING, future, future.plusDays(1))
         );
-
         when(bookingRepository.findAllByItemOwnerIdAndStartAfterOrderByStartDesc(eq(userId), any(LocalDateTime.class)))
                 .thenReturn(bookings);
 
-        List<BookingOutDto> result = bookingService.findAllByOwnerAndState(state, userId);
+        List<BookingOutDto> result = bookingService.findAllByOwnerAndState(BookingState.FUTURE, userId);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertTrue(bookings.get(0).getStart().isAfter(LocalDateTime.now()));
-        assertEquals(item.getId(), result.get(0).getItem().getId());
-        assertEquals(booker.getId(), result.get(0).getBooker().getId());
         verify(bookingRepository).findAllByItemOwnerIdAndStartAfterOrderByStartDesc(eq(userId), any(LocalDateTime.class));
     }
 

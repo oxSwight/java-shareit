@@ -70,6 +70,9 @@ class ItemRequestServiceTest {
     @Test
     void findAllOwnShouldReturnEmptyListWhenNoRequests() {
         Long userId = 1L;
+        User requester = createUser(userId, "Requester", "requester@email.com");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(requester));
         when(itemRequestRepository.findAllByRequesterIdOrderByCreatedDesc(userId))
                 .thenReturn(Collections.emptyList());
         when(itemRepository.findAllByRequestIdIn(anyList()))
@@ -79,9 +82,12 @@ class ItemRequestServiceTest {
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
+
+        verify(userRepository).findById(userId);
         verify(itemRequestRepository).findAllByRequesterIdOrderByCreatedDesc(userId);
         verify(itemRepository).findAllByRequestIdIn(anyList());
     }
+
 
     @Test
     void findAllOwnShouldReturnRequestsWithItems() {
@@ -89,10 +95,12 @@ class ItemRequestServiceTest {
         User requester = createUser(userId, "Requester", "requester@email.com");
         ItemRequest request1 = createItemRequest(1L, requester);
         ItemRequest request2 = createItemRequest(2L, requester);
+
         User owner = createUser(3L, "Owner", "owner@email.com");
         Item item1 = createItem(1L, "Item 1", owner, request1);
         Item item2 = createItem(2L, "Item 2", owner, request1);
 
+        when(userRepository.findById(userId)).thenReturn(Optional.of(requester));
         when(itemRequestRepository.findAllByRequesterIdOrderByCreatedDesc(userId))
                 .thenReturn(List.of(request1, request2));
         when(itemRepository.findAllByRequestIdIn(List.of(1L, 2L)))
@@ -104,13 +112,19 @@ class ItemRequestServiceTest {
         assertEquals(2, result.size());
         assertEquals(1L, result.get(0).getId());
         assertEquals(2, result.get(0).getItems().size());
+
+        verify(userRepository).findById(userId);
         verify(itemRequestRepository).findAllByRequesterIdOrderByCreatedDesc(userId);
         verify(itemRepository).findAllByRequestIdIn(List.of(1L, 2L));
     }
 
+
     @Test
     void findAllShouldReturnEmptyListWhenNoOtherRequests() {
         Long userId = 1L;
+        User user = createUser(userId, "User", "user@email.com");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(itemRequestRepository.findAllByRequesterIdNotOrderByCreatedDesc(userId))
                 .thenReturn(Collections.emptyList());
         when(itemRepository.findAllByRequestIdIn(anyList()))
@@ -120,19 +134,26 @@ class ItemRequestServiceTest {
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
+
+        verify(userRepository).findById(userId);
         verify(itemRequestRepository).findAllByRequesterIdNotOrderByCreatedDesc(userId);
         verify(itemRepository).findAllByRequestIdIn(anyList());
     }
 
+
     @Test
     void findAllShouldReturnOtherUsersRequests() {
         Long userId = 1L;
+        User currentUser = createUser(userId, "Current", "current@email.com");
         User otherUser = createUser(2L, "Other", "other@email.com");
+
         ItemRequest request1 = createItemRequest(1L, otherUser);
         ItemRequest request2 = createItemRequest(2L, otherUser);
+
         User owner = createUser(3L, "Owner", "owner@email.com");
         Item item1 = createItem(1L, "Item 1", owner, request1);
 
+        when(userRepository.findById(userId)).thenReturn(Optional.of(currentUser));
         when(itemRequestRepository.findAllByRequesterIdNotOrderByCreatedDesc(userId))
                 .thenReturn(List.of(request1, request2));
         when(itemRepository.findAllByRequestIdIn(List.of(1L, 2L)))
@@ -145,9 +166,12 @@ class ItemRequestServiceTest {
         assertEquals(1L, result.get(0).getId());
         assertEquals(1, result.get(0).getItems().size());
         assertEquals(0, result.get(1).getItems().size());
+
+        verify(userRepository).findById(userId);
         verify(itemRequestRepository).findAllByRequesterIdNotOrderByCreatedDesc(userId);
         verify(itemRepository).findAllByRequestIdIn(List.of(1L, 2L));
     }
+
 
     @Test
     void findByIdShouldThrowWhenRequestNotFound() {

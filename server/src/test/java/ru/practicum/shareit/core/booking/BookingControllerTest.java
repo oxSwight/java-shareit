@@ -241,27 +241,6 @@ class BookingControllerTest {
     }
 
     @Test
-    void getAllBookingsForUserShouldReturnBookings() throws Exception {
-        Long userId = 2L;
-        BookingOutDto booking1 = createBookingOutDto(1L, 1L, userId,
-                LocalDateTime.now().plusDays(1),
-                LocalDateTime.now().plusDays(2));
-        BookingOutDto booking2 = createBookingOutDto(2L, 2L, userId,
-                LocalDateTime.now().plusDays(3),
-                LocalDateTime.now().plusDays(4));
-
-        when(bookingService.findAllByBookerAndState(BookingState.ALL, 2L))
-                .thenReturn(List.of(booking1, booking2));
-        when(userService.findById(anyLong())).thenReturn(any());
-
-        mockMvc.perform(get("/bookings")
-                        .header("X-Sharer-User-Id", userId)
-                        .param("state", "ALL"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
-    }
-
-    @Test
     void getAllBookingsForOwnerShouldReturnBookings() throws Exception {
         Long ownerId = 1L;
         BookingOutDto booking1 = createBookingOutDto(1L, 1L, 2L,
@@ -271,12 +250,31 @@ class BookingControllerTest {
                 LocalDateTime.now().plusDays(3),
                 LocalDateTime.now().plusDays(4));
 
-        when(bookingService.findAllByOwnerAndState(BookingState.ALL, 1L))
+        when(bookingService.findAllByOwnerAndState(BookingState.ALL, ownerId))
                 .thenReturn(List.of(booking1, booking2));
-        when(userService.findById(anyLong())).thenReturn(any());
 
         mockMvc.perform(get("/bookings/owner")
                         .header("X-Sharer-User-Id", ownerId)
+                        .param("state", "ALL"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    void getAllBookingsForUserShouldReturnBookings() throws Exception {
+        Long userId = 2L;
+        BookingOutDto booking1 = createBookingOutDto(1L, 1L, userId,
+                LocalDateTime.now().plusDays(1),
+                LocalDateTime.now().plusDays(2));
+        BookingOutDto booking2 = createBookingOutDto(2L, 2L, userId,
+                LocalDateTime.now().plusDays(3),
+                LocalDateTime.now().plusDays(4));
+
+        when(bookingService.findAllByBookerAndState(BookingState.ALL, userId))
+                .thenReturn(List.of(booking1, booking2));
+
+        mockMvc.perform(get("/bookings")
+                        .header("X-Sharer-User-Id", userId)
                         .param("state", "ALL"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2));

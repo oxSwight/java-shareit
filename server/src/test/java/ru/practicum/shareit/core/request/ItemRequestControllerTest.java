@@ -101,7 +101,6 @@ class ItemRequestControllerTest {
     void findAllOwnShouldReturnUserRequests() throws Exception {
         when(itemRequestService.findAllOwn(anyLong()))
                 .thenReturn(List.of(itemRequestDto));
-        when(userService.findById(anyLong())).thenReturn(userDto);
 
         mockMvc.perform(get("/requests")
                         .header("X-Sharer-User-Id", 1L))
@@ -116,7 +115,6 @@ class ItemRequestControllerTest {
 
         when(itemRequestService.findById(anyLong()))
                 .thenReturn(itemRequestDto);
-        when(userService.findById(anyLong())).thenReturn(userDto);
 
         mockMvc.perform(get("/requests/{requestId}", 1L)
                         .header("X-Sharer-User-Id", 1L))
@@ -130,7 +128,6 @@ class ItemRequestControllerTest {
     void findAllShouldReturnOtherUsersRequests() throws Exception {
         when(itemRequestService.findAll(anyLong()))
                 .thenReturn(List.of(itemRequestDto));
-        when(userService.findById(anyLong())).thenReturn(userDto);
 
         mockMvc.perform(get("/requests/all")
                         .header("X-Sharer-User-Id", 1L)
@@ -145,7 +142,6 @@ class ItemRequestControllerTest {
     void findByIdShouldThrowWhenRequestNotFound() throws Exception {
         when(itemRequestService.findById(anyLong()))
                 .thenThrow(new NotFoundException("Запрос не найден"));
-        when(userService.findById(anyLong())).thenReturn(userDto);
 
         mockMvc.perform(get("/requests/{requestId}", 999L)
                         .header("X-Sharer-User-Id", 1L))
