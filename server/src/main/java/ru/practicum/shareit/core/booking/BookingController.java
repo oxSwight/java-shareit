@@ -5,7 +5,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.core.booking.inside.entity.dto.BookingInDto;
 import ru.practicum.shareit.core.booking.inside.entity.dto.BookingOutDto;
-import ru.practicum.shareit.core.user.UserService;
 
 import java.util.List;
 
@@ -14,7 +13,6 @@ import java.util.List;
 @RequestMapping(path = "/bookings")
 public class BookingController {
     private final BookingService bookingService;
-    private final UserService userService;
 
     @PostMapping
     public BookingOutDto create(@RequestBody
@@ -39,14 +37,12 @@ public class BookingController {
     @GetMapping
     public List<BookingOutDto> findAllByBookerAndState(@RequestParam(required = false, defaultValue = "ALL") BookingState state,
                                                        @RequestHeader("X-Sharer-User-Id") Long userId) {
-        userService.findById(userId);
         return bookingService.findAllByBookerAndState(state, userId);
     }
 
     @GetMapping("/owner")
     public List<BookingOutDto> findAllByOwnerAndState(@RequestParam(required = false, defaultValue = "ALL") BookingState state,
                                                       @RequestHeader("X-Sharer-User-Id") Long userId) {
-        userService.findById(userId);
         return bookingService.findAllByOwnerAndState(state, userId);
     }
 }

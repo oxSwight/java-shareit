@@ -28,35 +28,50 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
     @Override
     public List<ItemRequestDto> findAllOwn(Long userId) {
-        List<ItemRequest> requests = itemRequestRepository.findAllByRequesterIdOrderByCreatedDesc(userId);
+        User user = getUserOrThrow(userId);
+        List<ItemRequest> requests = itemRequestRepository.findAllByRequesterIdOrderByCreatedDesc(user.getId());
         List<Item> items = itemRepository.findAllByRequestIdIn(requests.stream().map(ItemRequest::getId).toList());
-        return requests.stream().map(request -> ItemRequestDtoMapper.toItemRequestDto(request,
-                items.stream()
-                        .filter(item -> Objects.equals(item.getRequest().getId(), request.getId()))
-                        .map(ItemDtoMapper::toItemShortDto).toList())).toList();
+        return requests.stream()
+                .map(request -> ItemRequestDtoMapper.toItemRequestDto(request,
+                        items.stream()
+                                .filter(item -> Objects.equals(item.getRequest().getId(), request.getId()))
+                                .map(ItemDtoMapper::toItemShortDto)
+                                .toList()))
+                .toList();
     }
 
     @Override
     public List<ItemRequestDto> findAll(Long userId) {
-        List<ItemRequest> requests = itemRequestRepository.findAllByRequesterIdNotOrderByCreatedDesc(userId);
+        User user = getUserOrThrow(userId);
+        List<ItemRequest> requests = itemRequestRepository.findAllByRequesterIdNotOrderByCreatedDesc(user.getId());
         List<Item> items = itemRepository.findAllByRequestIdIn(requests.stream().map(ItemRequest::getId).toList());
-        return requests.stream().map(request -> ItemRequestDtoMapper.toItemRequestDto(request,
-                items.stream()
-                        .filter(item -> Objects.equals(item.getRequest().getId(), request.getId()))
-                        .map(ItemDtoMapper::toItemShortDto).toList())).toList();
+        return requests.stream()
+                .map(request -> ItemRequestDtoMapper.toItemRequestDto(request,
+                        items.stream()
+                                .filter(item -> Objects.equals(item.getRequest().getId(), request.getId()))
+                                .map(ItemDtoMapper::toItemShortDto)
+                                .toList()))
+                .toList();
     }
 
     @Override
     public ItemRequestDto findById(Long itemRequestId) {
-        ItemRequest itemRequest = itemRequestRepository.findById(itemRequestId).orElseThrow(() -> new NotFoundException(NOT_FOUND_REQUEST));
+        ItemRequest itemRequest = itemRequestRepository.findById(itemRequestId)
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_REQUEST));
         List<Item> items = itemRepository.findAllByRequestIdIn(List.of(itemRequest.getId()));
-        return ItemRequestDtoMapper.toItemRequestDto(itemRequest, items.stream().map(ItemDtoMapper::toItemShortDto).toList());
+        return ItemRequestDtoMapper.toItemRequestDto(itemRequest,
+                items.stream().map(ItemDtoMapper::toItemShortDto).toList());
     }
 
     @Override
     public ItemRequestDto create(ItemRequestDto itemRequestDto, Long userId) {
-        User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException(NOT_FOUND_USER));
+        User user = getUserOrThrow(userId);
         ItemRequest itemRequest = ItemRequestDtoMapper.toItemRequest(itemRequestDto, user);
         return ItemRequestDtoMapper.toItemRequestDto(itemRequestRepository.saveAndFlush(itemRequest));
+    }
+
+    private User getUserOrThrow(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_USER));
     }
 }
