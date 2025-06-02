@@ -44,7 +44,6 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingOutDto updateStatus(Long bookingId, Long userId, Boolean approved) {
-        getUserOrThrow(userId);
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException(NOT_FOUND_BOOKING));
 
