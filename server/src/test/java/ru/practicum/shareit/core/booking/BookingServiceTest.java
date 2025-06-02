@@ -197,7 +197,6 @@ class BookingServiceTest {
         Item item = createItem(3L, "Item", owner, true);
         Booking booking = createBooking(bookingId, booker, item, BookingStatus.WAITING, future, future.plusDays(1));
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(owner));
         when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
         when(bookingRepository.saveAndFlush(any(Booking.class))).thenReturn(booking);
 
@@ -220,7 +219,6 @@ class BookingServiceTest {
         Item item = createItem(3L, "Item", owner, true);
         Booking booking = createBooking(bookingId, booker, item, BookingStatus.WAITING, future, future.plusDays(1));
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(owner));
         when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
         when(bookingRepository.saveAndFlush(any(Booking.class))).thenReturn(booking);
 
@@ -240,7 +238,6 @@ class BookingServiceTest {
         Long userId = 2L;
         User user = createUser(userId, "Owner", "owner@email.com");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(bookingRepository.findById(bookingId)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> bookingService.updateStatus(bookingId, userId, true));
@@ -259,7 +256,6 @@ class BookingServiceTest {
         Item item = createItem(3L, "Item", owner, true);
         Booking booking = createBooking(bookingId, booker, item, BookingStatus.WAITING, future, future.plusDays(1));
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
 
         assertThrows(ConditionsNotMetException.class, () -> bookingService.updateStatus(bookingId, userId, true));
