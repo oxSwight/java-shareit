@@ -1,0 +1,15 @@
+server:
+  port: 8080
+logging:
+  level:
+    org:
+      springframework:
+        orm:
+          jpa:
+            JpaTransactionManager: DEBUG
+            nodeValue: INFO
+        transaction:
+          interceptor: TRACE
+          nodeValue: INFO
+shareit-server:
+  url: http://localhost:9090
