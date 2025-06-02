@@ -1,5 +1,6 @@
 package ru.practicum.shareit.core.booking.inside.entity.dto;
 
+import lombok.experimental.UtilityClass;
 import ru.practicum.shareit.core.booking.BookingStatus;
 import ru.practicum.shareit.core.booking.inside.entity.model.Booking;
 import ru.practicum.shareit.core.item.inside.entity.model.Item;
@@ -7,10 +8,8 @@ import ru.practicum.shareit.core.item.inside.entity.dto.ItemDtoMapper;
 import ru.practicum.shareit.core.user.inside.entity.model.User;
 import ru.practicum.shareit.core.user.inside.entity.dto.UserDtoMapper;
 
+@UtilityClass
 public class BookingDtoMapper {
-    private BookingDtoMapper() {
-
-    }
 
     public static Booking toBooking(BookingInDto bookingDto, Item item, User user) {
         return Booking.builder()

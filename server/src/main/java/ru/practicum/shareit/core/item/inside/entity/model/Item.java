@@ -13,6 +13,7 @@ import ru.practicum.shareit.core.user.inside.entity.model.User;
 @Entity
 @Table(name = "items")
 public class Item {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -27,8 +28,10 @@ public class Item {
     private Boolean available;
 
     @ManyToOne
+    @JoinColumn(name = "owner_id")
     private User owner;
 
     @ManyToOne
+    @JoinColumn(name = "request_id")
     private ItemRequest request;
 }

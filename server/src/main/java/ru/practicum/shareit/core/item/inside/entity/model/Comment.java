@@ -22,9 +22,11 @@ public class Comment {
     private String text;
 
     @ManyToOne
+    @JoinColumn(name = "item_id")
     private Item item;
 
     @ManyToOne
+    @JoinColumn(name = "author_id")
     private User author;
 
     @Column(name = "created", nullable = false)
