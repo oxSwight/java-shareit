@@ -40,7 +40,7 @@ cd java-shareit
 ./mvnw spring-boot:run
 ```
 ---
-##📑 API Endpoints
+## 📑 API Endpoints
 GET /items
 
 Returns a list of all items owned by the user.
@@ -63,7 +63,7 @@ Updates an existing item.
 
 ---
 
-##📌 Request Parameters
+## 📌 Request Parameters
 
 X-Sharer-User-Id – request header containing the user ID
 
@@ -76,7 +76,7 @@ item – JSON object representing an item
 Updates an existing item.
 
 
-##📤 Response Codes
+## 📤 Response Codes
 
 200 OK – request successful
 
