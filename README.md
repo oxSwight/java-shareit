@@ -1,64 +1,82 @@
-# java-shareit
-## Учебное приложения курса Java-разработчик Yandex.Practicum
+# ShareIt 🔄
+## Educational project from the **Java Developer course – Yandex.Practicum**
 
-## Описание функциональности
+ShareIt is a **RESTful API** for managing items.  
+It allows users to create, read, update and delete items, as well as **search items by keyword**.
 
-Приложение представляет собой RESTful API для управления предметами. Оно позволяет пользователям создавать, читать, обновлять и удалять предметы. Также приложение предоставляет возможность поиска предметов по ключевому слову.
+---
 
-## Описание методов
+## ✨ Features
+- 📦 Create, update and delete items  
+- 📅 List all items for a given user  
+- 🔍 Search items by text in name/description  
+- ⭐ Simple user identification via request header  
+- 🗃️ SQL database integration (PostgreSQL, JPA/Hibernate)  
+- 🐳 Docker support  
 
-### GET /items
+---
 
-Метод возвращает список всех предметов, принадлежащих пользователю.
+## 🛠 Tech Stack
+- **Java 17**  
+- **Spring Boot**  
+- **PostgreSQL, JPA/Hibernate**  
+- **REST API**  
+- **JUnit, Mockito**  
+- **Docker**  
 
-### GET /items/{id}
+---
 
-Метод возвращает предмет с указанным идентификатором.
+## 🚀 Getting Started
 
-### GET /items/search
+```bash
+# clone repo
+git clone https://github.com/oxSwight/java-shareit.git
+cd java-shareit
 
-Метод возвращает список предметов, которые содержат указанный текст в названии или описании.
+# run tests
+./mvnw test
 
-### POST /items
+# run app
+./mvnw spring-boot:run
+```
 
-Метод создает новый предмет.
+##📑 API Endpoints
+GET /items
 
-### PATCH /items/{id}
+Returns a list of all items owned by the user.
 
-Метод обновляет существующий предмет.
+GET /items/{id}
 
-## Описание параметров
+Returns the item with the specified identifier.
 
-### X-Sharer-User-Id
+GET /items/search?text={keyword}
 
-Заголовок запроса, содержащий идентификатор пользователя.
+Returns a list of items containing the specified text in name or description.
 
-### id
+POST /items
 
-Идентификатор предмета.
+Creates a new item.
 
-### text
+PATCH /items/{id}
 
-Текст для поиска предметов.
+Updates an existing item.
 
-### item
+##📌 Request Parameters
 
-Объект предмета, который будет создан или обновлен.
+X-Sharer-User-Id – request header containing the user ID
 
-## Описание ответов
+id – item identifier
 
-### 200 OK
+text – keyword for search
 
-Запрос выполнен успешно.
+item – JSON object representing an item
 
-### 201 Created
+##📤 Response Codes
 
-Предмет успешно создан.
+200 OK – request successful
 
-### 400 Bad Request
+201 Created – item created successfully
 
-Запрос содержит некорректные данные.
+400 Bad Request – invalid request data
 
-### 404 Not Found
-
-Предмет с указанным идентификатором не найден.
+404 Not Found – item not found
