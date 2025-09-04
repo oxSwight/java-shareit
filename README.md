@@ -39,7 +39,7 @@ cd java-shareit
 # run app
 ./mvnw spring-boot:run
 ```
-
+---
 ##📑 API Endpoints
 GET /items
 
@@ -61,6 +61,8 @@ PATCH /items/{id}
 
 Updates an existing item.
 
+---
+
 ##📌 Request Parameters
 
 X-Sharer-User-Id – request header containing the user ID
@@ -71,6 +73,9 @@ text – keyword for search
 
 item – JSON object representing an item
 
+Updates an existing item.
+
+
 ##📤 Response Codes
 
 200 OK – request successful
@@ -80,3 +85,6 @@ item – JSON object representing an item
 400 Bad Request – invalid request data
 
 404 Not Found – item not found
+
+Updates an existing item.
+
